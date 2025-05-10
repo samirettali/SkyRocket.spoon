@@ -256,7 +256,7 @@ function SkyRocket:handleClick()
 			self.dragHandler:start()
 			self.clickHandler:stop()
 
-			if focusWindowOnClick then
+			if self.focusWindowOnClick then
 				currentWindow:focus()
 			end
 			return true
