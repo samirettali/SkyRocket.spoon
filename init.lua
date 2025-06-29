@@ -13,7 +13,6 @@ SkyRocket.version = "1.0.2"
 SkyRocket.spoonPath = scriptPath()
 
 local dragTypes = {
-	move = 1,
 	resize = 2,
 }
 
@@ -42,8 +41,6 @@ end
 
 -- Usage:
 --   resizer = SkyRocket:new({
---     moveModifiers = {'cmd', 'shift'},
---     moveMouseButton = 'left',
 --     resizeModifiers = {'ctrl', 'shift'}
 --     resizeMouseButton = 'left',
 --     focusWindowOnClick = false,
@@ -66,8 +63,6 @@ function SkyRocket:new(options)
 		disabledApps = tableToMap(options.disabledApps or {}),
 		dragging = false,
 		dragType = nil,
-		moveStartMouseEvent = buttonNameToEventType(options.moveMouseButton or "left", "moveMouseButton"),
-		moveModifiers = options.moveModifiers or { "cmd", "shift" },
 		resizeStartMouseEvent = buttonNameToEventType(options.resizeMouseButton or "left", "resizeMouseButton"),
 		resizeModifiers = options.resizeModifiers or { "ctrl", "shift" },
 		targetWindow = nil,
@@ -110,10 +105,6 @@ function SkyRocket:isResizing()
 	return self.dragType == dragTypes.resize
 end
 
-function SkyRocket:isMoving()
-	return self.dragType == dragTypes.move
-end
-
 function SkyRocket:handleDrag()
 	return function(event)
 		if not self.dragging then
@@ -123,16 +114,7 @@ function SkyRocket:handleDrag()
 		local dx = event:getProperty(hs.eventtap.event.properties.mouseEventDeltaX)
 		local dy = event:getProperty(hs.eventtap.event.properties.mouseEventDeltaY)
 
-		if self:isMoving() then
-			local current = self.targetWindow:topLeft()
-
-			self.targetWindow:setTopLeft({
-				x = current.x + dx,
-				y = current.y + dy,
-			})
-
-			return true
-		elseif self:isResizing() then
+		if self:isResizing() then
 			local currentSize = self.targetWindow:size()
 
 			self.targetWindow:setSize({
@@ -166,10 +148,9 @@ function SkyRocket:handleClick()
 		local flags = event:getFlags()
 		local eventType = event:getType()
 
-		local isMoving = eventType == self.moveStartMouseEvent and flags:containExactly(self.moveModifiers)
 		local isResizing = eventType == self.resizeStartMouseEvent and flags:containExactly(self.resizeModifiers)
 
-		if isMoving or isResizing then
+		if isResizing then
 			local currentWindow = getWindowUnderMouse()
 
 			if self.disabledApps[currentWindow:application():name()] then
@@ -179,11 +160,7 @@ function SkyRocket:handleClick()
 			self.dragging = true
 			self.targetWindow = currentWindow
 
-			if isMoving then
-				self.dragType = dragTypes.move
-			else
-				self.dragType = dragTypes.resize
-			end
+			self.dragType = dragTypes.resize
 
 			self.cancelHandler:start()
 			self.dragHandler:start()
